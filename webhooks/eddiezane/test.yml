@@ -1,0 +1,8 @@
+method: POST
+headers:
+  - foo:
+    - bar
+    - baz
+  - herp:
+    - derp
+body: test=body
