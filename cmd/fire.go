@@ -29,6 +29,7 @@ func fire(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	hookName := args[0]
+	// TODO(eddiezane): Guard against path traversal
 	bs, err := ioutil.ReadFile(hookName)
 	if err != nil {
 		panic(err)
