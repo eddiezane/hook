@@ -1,8 +1,8 @@
 method: POST
 headers:
-  - foo:
+  foo:
     - bar
     - baz
-  - herp:
+  herp:
     - derp
 body: test=body
