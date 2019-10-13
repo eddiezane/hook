@@ -58,3 +58,12 @@ func (h *HTTPRequest) Dump() ([]byte, error) {
 
 	return out, nil
 }
+
+func Slurp(bs []byte) (*HTTPRequest, error) {
+	h := &HTTPRequest{}
+	err := yaml.Unmarshal(bs, h)
+	if err != nil {
+		return nil, err
+	}
+	return h, nil
+}

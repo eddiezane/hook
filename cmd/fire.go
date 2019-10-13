@@ -2,6 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"os"
+
+	"github.com/eddiezane/captain-hook/pkg/httptoyaml"
 	"github.com/spf13/cobra"
 )
 
@@ -18,5 +24,31 @@ var fireCommand = &cobra.Command{
 }
 
 func fire(cmd *cobra.Command, args []string) {
-	fmt.Println("fire command")
+	if len(args) <= 0 {
+		cmd.Usage()
+		os.Exit(1)
+	}
+	hookName := args[0]
+	bs, err := ioutil.ReadFile(hookName)
+	if err != nil {
+		panic(err)
+	}
+	h, err := httptoyaml.Slurp(bs)
+	if err != nil {
+		panic(err)
+	}
+	r, err := httptoyaml.Unmarshal(h)
+	if err != nil {
+		panic(err)
+	}
+	u, err := url.Parse(args[1])
+	if err != nil {
+		panic(err)
+	}
+	r.URL = u
+	res, err := http.DefaultClient.Do(r)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(res)
 }

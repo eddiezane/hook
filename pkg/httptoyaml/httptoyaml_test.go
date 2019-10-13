@@ -74,3 +74,34 @@ func TestUnmarshal(t *testing.T) {
 		t.Errorf("expected body to be %s got %s", body, b)
 	}
 }
+
+func TestSlurp(t *testing.T) {
+	yml := `
+method: POST
+headers:
+  foo:
+  - bar
+  - baz
+  herp:
+  - derp
+body: test=body
+`
+	bs := []byte(yml)
+	h, err := Slurp(bs)
+	if err != nil {
+		t.Error(err)
+	}
+	if h == nil {
+		t.Error("expected h to be defined")
+	}
+
+	yml = `: bad yaml`
+	bs = []byte(yml)
+	h, err = Slurp(bs)
+	if err == nil {
+		t.Error("expected error but got nil")
+	}
+	if h != nil {
+		t.Errorf("expected HTTPRequest to be nil but got %v", h)
+	}
+}
