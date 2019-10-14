@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/eddiezane/captain-hook/cmd"
+	"github.com/eddiezane/hook/cmd"
 )
 
 func main() {

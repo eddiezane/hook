@@ -8,7 +8,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "hook",
-	Short: "Captain Hook is a tool for firing a known collection of webhooks",
+	Short: "Hook is a tool for firing a known collection of webhooks",
 }
 
 // Execute runs the root command

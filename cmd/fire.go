@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/eddiezane/captain-hook/pkg/hook"
+	"github.com/eddiezane/hook/pkg/hook"
 	"github.com/spf13/cobra"
 )
 
