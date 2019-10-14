@@ -2,12 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
 
-	"github.com/eddiezane/captain-hook/pkg/httptoyaml"
+	"github.com/eddiezane/captain-hook/pkg/hook"
 	"github.com/spf13/cobra"
 )
 
@@ -20,36 +17,23 @@ func init() {
 var fireCommand = &cobra.Command{
 	Use:   "fire",
 	Short: "Fires the selected webhook at a given url",
-	Run:   fire,
+	RunE:  fire,
 }
 
-func fire(cmd *cobra.Command, args []string) {
+func fire(cmd *cobra.Command, args []string) error {
 	if len(args) <= 0 {
 		cmd.Usage()
 		os.Exit(1)
 	}
-	hookName := args[0]
-	// TODO(eddiezane): Guard against path traversal
-	bs, err := ioutil.ReadFile(hookName)
+	path := args[0]
+
+	h, err := hook.NewFromPath(path)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	h, err := httptoyaml.Slurp(bs)
-	if err != nil {
-		panic(err)
-	}
-	r, err := httptoyaml.Unmarshal(h)
-	if err != nil {
-		panic(err)
-	}
-	u, err := url.Parse(args[1])
-	if err != nil {
-		panic(err)
-	}
-	r.URL = u
-	res, err := http.DefaultClient.Do(r)
-	if err != nil {
-		panic(err)
-	}
+
+	target := args[1]
+	res, err := h.Fire(target)
 	fmt.Println(res)
+	return err
 }

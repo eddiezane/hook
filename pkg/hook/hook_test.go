@@ -1,13 +1,14 @@
-package httptoyaml
+package hook
 
 import (
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 )
 
-func TestMarshal(t *testing.T) {
+func TestNew_http(t *testing.T) {
 	body := "test=body"
 	b := strings.NewReader(body)
 	r, err := http.NewRequest(http.MethodPost, "/", b)
@@ -18,7 +19,7 @@ func TestMarshal(t *testing.T) {
 	r.Header.Add("foo", "baz")
 	r.Header.Add("herp", "derp")
 
-	h, err := Marshal(r)
+	h, err := NewFromRequest(r)
 	if err != nil {
 		t.Error(err)
 	}
@@ -40,19 +41,19 @@ func TestMarshal(t *testing.T) {
 	}
 }
 
-func TestUnmarshal(t *testing.T) {
-	headers := map[string][]string{
+func TestToRequest(t *testing.T) {
+	headers := http.Header{
 		"foo":  []string{"bar", "baz"},
 		"herp": []string{"derp"},
 	}
 	body := "test=body"
-	h := &HTTPRequest{
+	h := &Hook{
 		Method:  http.MethodPost,
 		Headers: headers,
 		Body:    body,
 	}
 
-	r, err := Unmarshal(h)
+	r, err := h.toRequest("localhost")
 	if err != nil {
 		t.Error(err)
 	}
@@ -61,10 +62,9 @@ func TestUnmarshal(t *testing.T) {
 		t.Errorf("expected method to me POST got %s", r.Method)
 	}
 
-	// TODO(eddiezane): Idk why this fails
-	// if !reflect.DeepEqual(headers, r.Header) {
-	// t.Errorf("expected headers to be %v got %v", headers, r.Header)
-	// }
+	if !reflect.DeepEqual(headers, r.Header) {
+		t.Errorf("expected headers to be %v got %v", headers, r.Header)
+	}
 
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -75,7 +75,7 @@ func TestUnmarshal(t *testing.T) {
 	}
 }
 
-func TestSlurp(t *testing.T) {
+func TestNew_byte(t *testing.T) {
 	yml := `
 method: POST
 headers:
@@ -87,7 +87,7 @@ headers:
 body: test=body
 `
 	bs := []byte(yml)
-	h, err := Slurp(bs)
+	h, err := New(bs)
 	if err != nil {
 		t.Error(err)
 	}
@@ -97,11 +97,11 @@ body: test=body
 
 	yml = `: bad yaml`
 	bs = []byte(yml)
-	h, err = Slurp(bs)
+	h, err = New(bs)
 	if err == nil {
 		t.Error("expected error but got nil")
 	}
 	if h != nil {
-		t.Errorf("expected HTTPRequest to be nil but got %v", h)
+		t.Errorf("expected Hook to be nil but got %v", h)
 	}
 }

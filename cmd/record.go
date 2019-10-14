@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/eddiezane/captain-hook/pkg/httptoyaml"
+	"github.com/eddiezane/captain-hook/pkg/hook"
 
 	"github.com/spf13/cobra"
 )
@@ -16,10 +16,10 @@ var port string
 var recordCommand = &cobra.Command{
 	Use:   "record",
 	Short: "Listens for an incoming webook and saves it",
-	Run:   record,
+	RunE:  record,
 }
 
-func record(cmd *cobra.Command, args []string) {
+func record(cmd *cobra.Command, args []string) error {
 	if len(args) <= 0 {
 		cmd.Usage()
 		os.Exit(1)
@@ -31,7 +31,7 @@ func record(cmd *cobra.Command, args []string) {
 		// TODO(eddiezane): Log body? If so need to clone the readcloser
 		log.Printf("method: %s, headers: %v", r.Method, r.Header)
 
-		h, err := httptoyaml.Marshal(r)
+		h, err := hook.NewFromRequest(r)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -42,10 +42,8 @@ func record(cmd *cobra.Command, args []string) {
 		}
 		// TODO(eddiezane): Would this ever happen?
 		if len(s) != 0 {
-			// TODO(eddiezane): Path traversal
 			// TODO(eddiezane): Create dirs
-			err = ioutil.WriteFile(args[0], s, 0644)
-			if err != nil {
+			if err := ioutil.WriteFile(args[0], s, 0644); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -54,10 +52,7 @@ func record(cmd *cobra.Command, args []string) {
 	})
 
 	log.Printf("starting server on port %s", port)
-	err := http.ListenAndServe(":"+port, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	return http.ListenAndServe(":"+port, nil)
 }
 
 func init() {
