@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/eddiezane/captain-hook/pkg/hook"
+	"github.com/eddiezane/hook/pkg/hook"
 
 	"github.com/spf13/cobra"
 )

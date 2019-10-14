@@ -1,4 +1,4 @@
-module github.com/eddiezane/captain-hook
+module github.com/eddiezane/hook
 
 go 1.13
 

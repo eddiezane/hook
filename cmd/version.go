@@ -15,6 +15,6 @@ var versionCommand = &cobra.Command{
 	Use:   "version",
 	Short: "Prints out the version of hook",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(fmt.Sprintf("Captain Hook version %s", version))
+		fmt.Println(fmt.Sprintf("Hook version %s", version))
 	},
 }
