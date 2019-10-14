@@ -49,9 +49,9 @@ hook record --port 8080 path/to/new/webhook.yml
   - [ ] Define spec for a catalog
   - [ ] Download and lookup (tap) a new catalog
   - [ ] Create default catalog as it's own GitHub repo
+  - [ ] Add automatic workflows to update webhooks.
 - [ ] Template logic for webhooks (sub in vars)
 - [ ] Web UI
-- [ ] CI/CD logic for consuming webhooks
 
 # License
 
