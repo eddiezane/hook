@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/eddiezane/captain-hook/pkg/hook"
 
@@ -14,15 +14,16 @@ import (
 var port string
 
 var recordCommand = &cobra.Command{
-	Use:   "record",
-	Short: "Listens for an incoming webook and saves it",
-	RunE:  record,
+	Use:     "record",
+	Short:   "Listens for an incoming webook and saves it",
+	Long:    "records starts up a local HTTP server and saves a request made against it into a YAML serialization at the provided path",
+	Example: "hook record --port 9000 path/to/webhook.yml",
+	RunE:    record,
 }
 
 func record(cmd *cobra.Command, args []string) error {
-	if len(args) <= 0 {
-		cmd.Usage()
-		os.Exit(1)
+	if len(args) != 1 {
+		return fmt.Errorf("incorrect number of arguments provided. expected %d", 1)
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/eddiezane/captain-hook/pkg/hook"
 	"github.com/spf13/cobra"
@@ -10,23 +9,22 @@ import (
 
 func init() {
 	rootCmd.AddCommand(fireCommand)
-
-	// TODO(eddiezane): Slurp up all hooks here?
 }
 
 var fireCommand = &cobra.Command{
-	Use:   "fire",
-	Short: "Fires the selected webhook at a given url",
-	RunE:  fire,
+	Use:     "fire",
+	Short:   "Fires the selected webhook at a given url",
+	Long:    "Fire executes the selected webhook at the given url",
+	Example: "hook fire http://localhost:3000 webhooks/twilio/sms.yml",
+	RunE:    fire,
 }
 
 func fire(cmd *cobra.Command, args []string) error {
-	if len(args) <= 0 {
-		cmd.Usage()
-		os.Exit(1)
+	if len(args) != 2 {
+		return fmt.Errorf("incorrect number of arguments provided. expected %d", 2)
 	}
-	path := args[0]
 
+	path := args[0]
 	h, err := hook.NewFromPath(path)
 	if err != nil {
 		return err
