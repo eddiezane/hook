@@ -60,7 +60,7 @@ func (h *Hook) Dump() ([]byte, error) {
 func (h *Hook) joinURLParams() string {
 	params := make([]string, 0, len(h.Params))
 	for k, v := range h.Params {
-		params = append(params, fmt.Sprintf("%v=%v&", k, v))
+		params = append(params, fmt.Sprintf("%v=%v", k, v))
 	}
 	return "?" + strings.Join(params, "&")
 }
