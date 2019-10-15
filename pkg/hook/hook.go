@@ -68,7 +68,7 @@ func (h *Hook) joinURLParams() string {
 // Fire sends an HTTP request to the given target.
 func (h *Hook) Fire(target string) (*http.Response, error) {
 	if len(h.Params) >= 1 {
-		target = h.joinURLParams()
+		target += h.joinURLParams()
 	}
 	r, err := h.toRequest(target)
 	if err != nil {
