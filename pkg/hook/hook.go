@@ -1,9 +1,9 @@
 package hook
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -11,10 +11,10 @@ import (
 
 // Hook represents a single hook configuration.
 type Hook struct {
-	Method  string            `yaml:"method"`
-	Headers http.Header       `yaml:"headers"`
-	Body    string            `yaml:"body"`
-	Params  map[string]string `yaml:"params"`
+	Method  string      `yaml:"method"`
+	Headers http.Header `yaml:"headers"`
+	Body    string      `yaml:"body"`
+	Params  url.Values  `yaml:"params"`
 }
 
 // NewFromRequest creates a new Hook from the given HTTP Request.
@@ -57,19 +57,8 @@ func (h *Hook) Dump() ([]byte, error) {
 	return yaml.Marshal(h)
 }
 
-func (h *Hook) joinURLParams() string {
-	params := make([]string, 0, len(h.Params))
-	for k, v := range h.Params {
-		params = append(params, fmt.Sprintf("%v=%v", k, v))
-	}
-	return "?" + strings.Join(params, "&")
-}
-
 // Fire sends an HTTP request to the given target.
 func (h *Hook) Fire(target string) (*http.Response, error) {
-	if len(h.Params) >= 1 {
-		target += h.joinURLParams()
-	}
 	r, err := h.toRequest(target)
 	if err != nil {
 		return nil, err
@@ -85,6 +74,7 @@ func (h *Hook) toRequest(target string) (*http.Request, error) {
 	}
 
 	r.Header = h.Headers
+	r.URL.RawQuery = h.Params.Encode()
 
 	if h.Body != "" {
 		reader := strings.NewReader(h.Body)
