@@ -105,3 +105,28 @@ body: test=body
 		t.Errorf("expected Hook to be nil but got %v", h)
 	}
 }
+
+func TestJoinURLParams(t *testing.T) {
+	yml := `
+method: POST
+headers:
+  foo:
+  - bar
+  - baz
+  herp:
+  - derp
+body: test=body
+params:
+  foo: bar
+  taco: cat
+`
+	bs := []byte(yml)
+	h, err := New(bs)
+	if err != nil {
+		t.Error(err)
+	}
+	params := h.joinURLParams()
+	if params != "?foo=bar&taco=cat" {
+		t.Error(err)
+	}
+}
