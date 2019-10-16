@@ -87,17 +87,7 @@ func TestToRequest(t *testing.T) {
 }
 
 func TestToRequest_empty_params(t *testing.T) {
-	headers := http.Header{
-		"foo":  []string{"bar", "baz"},
-		"herp": []string{"derp"},
-	}
-	body := "test=body"
-
-	h := &Hook{
-		Method:  http.MethodPost,
-		Headers: headers,
-		Body:    body,
-	}
+	h := &Hook{}
 
 	r, err := h.toRequest("localhost")
 	if err != nil {
