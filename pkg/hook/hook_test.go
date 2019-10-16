@@ -3,6 +3,7 @@ package hook
 import (
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -47,10 +48,16 @@ func TestToRequest(t *testing.T) {
 		"herp": []string{"derp"},
 	}
 	body := "test=body"
+	params := url.Values{
+		"foo":  []string{"bar", "baz"},
+		"taco": []string{"cat"},
+	}
+
 	h := &Hook{
 		Method:  http.MethodPost,
 		Headers: headers,
 		Body:    body,
+		Params:  params,
 	}
 
 	r, err := h.toRequest("localhost")
@@ -59,7 +66,11 @@ func TestToRequest(t *testing.T) {
 	}
 
 	if r.Method != http.MethodPost {
-		t.Errorf("expected method to me POST got %s", r.Method)
+		t.Errorf("expected method to be POST got %s", r.Method)
+	}
+
+	if !reflect.DeepEqual(params, r.URL.Query()) {
+		t.Errorf("expected params to be %v got %v", params, r.URL.Query())
 	}
 
 	if !reflect.DeepEqual(headers, r.Header) {
@@ -72,6 +83,29 @@ func TestToRequest(t *testing.T) {
 	}
 	if body != string(b) {
 		t.Errorf("expected body to be %s got %s", body, b)
+	}
+}
+
+func TestToRequest_empty_params(t *testing.T) {
+	headers := http.Header{
+		"foo":  []string{"bar", "baz"},
+		"herp": []string{"derp"},
+	}
+	body := "test=body"
+
+	h := &Hook{
+		Method:  http.MethodPost,
+		Headers: headers,
+		Body:    body,
+	}
+
+	r, err := h.toRequest("localhost")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if reflect.DeepEqual(url.Values{}, r.URL.Query()) {
+		t.Errorf("expected params to be %v got %v", url.Values{}, r.URL.Query())
 	}
 }
 

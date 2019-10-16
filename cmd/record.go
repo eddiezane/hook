@@ -30,7 +30,7 @@ func record(cmd *cobra.Command, args []string) error {
 		// TODO(eddiezane): Handle http error response
 
 		// TODO(eddiezane): Log body? If so need to clone the readcloser
-		log.Printf("method: %s, headers: %v", r.Method, r.Header)
+		log.Printf("method: %s, headers: %v, params: %v", r.Method, r.Header, r.URL.Query())
 
 		h, err := hook.NewFromRequest(r)
 		if err != nil {
