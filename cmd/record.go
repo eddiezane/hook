@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"sync"
 
 	"github.com/eddiezane/hook/pkg/hook"
 
@@ -21,39 +23,75 @@ var recordCommand = &cobra.Command{
 	RunE:    record,
 }
 
+type recorder struct {
+	mu sync.Mutex
+	f  *os.File
+}
+
+func newRecorder(path string) (*recorder, error) {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_TRUNC|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	return &recorder{
+		f: f,
+	}, nil
+}
+
+func (r *recorder) close() error {
+	return r.f.Close()
+}
+
+func (r *recorder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// TODO(eddiezane): Handle http error response
+
+	// TODO(eddiezane): Log body? If so need to clone the readcloser
+	log.Printf("method: %s, headers: %v, params: %v", r.Method, r.Header, r.URL.Query())
+
+	h, err := hook.NewFromRequest(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	s, err := h.Dump()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// TODO(eddiezane): Would this ever happen?
+	if len(s) != 0 {
+		// TODO(eddiezane): Create dirs
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		fw := bufio.NewWriter(r.f)
+		if fi, err := r.f.Stat(); err == nil && fi.Size() > 0 {
+			// If file has data in it already, append doc separator.
+			if _, err := fw.Write([]byte("---\n")); err != nil {
+				log.Fatal(err)
+			}
+		}
+		if _, err := fw.Write(s); err != nil {
+			log.Fatal(err)
+		}
+		fw.Flush()
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func record(cmd *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("incorrect number of arguments provided. expected %d", 1)
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// TODO(eddiezane): Handle http error response
-
-		// TODO(eddiezane): Log body? If so need to clone the readcloser
-		log.Printf("method: %s, headers: %v, params: %v", r.Method, r.Header, r.URL.Query())
-
-		h, err := hook.NewFromRequest(r)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		s, err := h.Dump()
-		if err != nil {
-			log.Fatal(err)
-		}
-		// TODO(eddiezane): Would this ever happen?
-		if len(s) != 0 {
-			// TODO(eddiezane): Create dirs
-			if err := ioutil.WriteFile(args[0], s, 0644); err != nil {
-				log.Fatal(err)
-			}
-		}
-
-		w.WriteHeader(http.StatusOK)
-	})
+	r, err := newRecorder(args[0])
+	if err != nil {
+		return err
+	}
+	defer r.close()
 
 	log.Printf("starting server on port %s", port)
-	return http.ListenAndServe(":"+port, nil)
+	return http.ListenAndServe(":"+port, r)
 }
 
 func init() {
