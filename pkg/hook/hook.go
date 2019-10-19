@@ -1,8 +1,10 @@
 package hook
 
 import (
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -33,21 +35,32 @@ func NewFromRequest(r *http.Request) (*Hook, error) {
 }
 
 // NewFromPath creates a new Hook from the given path.
-func NewFromPath(path string) (*Hook, error) {
-	bs, err := ioutil.ReadFile(path)
+func NewFromPath(path string) ([]*Hook, error) {
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	return New(bs)
+	defer f.Close()
+	return New(f)
 }
 
 // New creates a new Hook from the given bytestring.
-func New(bs []byte) (*Hook, error) {
-	h := &Hook{}
-	if err := yaml.Unmarshal(bs, h); err != nil {
+func New(r io.Reader) ([]*Hook, error) {
+	res := []*Hook{}
+	d := yaml.NewDecoder(r)
+
+	var err error
+	for err == nil {
+		h := new(Hook)
+		err = d.Decode(h)
+		if err == nil {
+			res = append(res, h)
+		}
+	}
+	if err != io.EOF {
 		return nil, err
 	}
-	return h, nil
+	return res, nil
 }
 
 // Dump TODO(eddiezane): Is this the right method?

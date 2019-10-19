@@ -25,13 +25,18 @@ func fire(cmd *cobra.Command, args []string) error {
 	}
 
 	path := args[0]
-	h, err := hook.NewFromPath(path)
+	hooks, err := hook.NewFromPath(path)
 	if err != nil {
 		return err
 	}
 
 	target := args[1]
-	res, err := h.Fire(target)
-	fmt.Println(res)
-	return err
+	for _, h := range hooks {
+		res, err := h.Fire(target)
+		if err != nil {
+			return err
+		}
+		fmt.Println(res)
+	}
+	return nil
 }

@@ -1,14 +1,17 @@
 package hook
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
-func TestNew_http(t *testing.T) {
+func TestNewFromRequest(t *testing.T) {
 	body := "test=body"
 	b := strings.NewReader(body)
 	r, err := http.NewRequest(http.MethodPost, "/", b)
@@ -75,7 +78,7 @@ func TestToRequest(t *testing.T) {
 	}
 }
 
-func TestNew_byte(t *testing.T) {
+func TestNew(t *testing.T) {
 	yml := `
 method: POST
 headers:
@@ -86,18 +89,45 @@ headers:
   - derp
 body: test=body
 `
-	bs := []byte(yml)
-	h, err := New(bs)
-	if err != nil {
-		t.Error(err)
+	hook := &Hook{
+		Method: http.MethodPost,
+		Headers: http.Header{
+			"foo":  []string{"bar", "baz"},
+			"herp": []string{"derp"},
+		},
+		Body: "test=body",
 	}
-	if h == nil {
-		t.Error("expected h to be defined")
+
+	testcases := []struct {
+		name string
+		yml  string
+		want []*Hook
+	}{
+		{
+			name: "singledoc",
+			yml:  yml,
+			want: []*Hook{hook},
+		},
+		{
+			name: "multidoc",
+			yml:  fmt.Sprintf("%s---\n%s", yml, yml),
+			want: []*Hook{hook, hook},
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			h, err := New(strings.NewReader(tc.yml))
+			if err != nil {
+				t.Error(err)
+			}
+			if diff := cmp.Diff(h, tc.want); diff != "" {
+				t.Error(diff)
+			}
+		})
 	}
 
 	yml = `: bad yaml`
-	bs = []byte(yml)
-	h, err = New(bs)
+	h, err := New(strings.NewReader(yml))
 	if err == nil {
 		t.Error("expected error but got nil")
 	}
