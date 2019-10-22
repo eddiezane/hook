@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
@@ -59,14 +60,25 @@ func cachedir(t *testing.T) string {
 	return filepath.Join(d, "hook")
 }
 
-func TestAddConfig(t *testing.T) {
+// testdirInit creates a test directory, sets relevant environment variables,
+// and initializes hook configuration to read from the directory.
+func testdirInit(t *testing.T) string {
+	t.Helper()
 	d, err := ioutil.TempDir("", "hook")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(d)
 	os.Setenv("HOME", d)
+
+	viper.Reset()
 	initcfg()
+
+	return d
+}
+
+func TestAddConfig(t *testing.T) {
+	d := testdirInit(t)
+	defer os.RemoveAll(d)
 
 	if err := addConfig("https://example.com/foo", "", ""); err != nil {
 		t.Fatal(err)
