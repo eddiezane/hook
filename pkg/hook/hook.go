@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -15,6 +16,7 @@ type Hook struct {
 	Method  string      `yaml:"method"`
 	Headers http.Header `yaml:"headers"`
 	Body    string      `yaml:"body"`
+	Params  url.Values  `yaml:"params"`
 }
 
 // NewFromRequest creates a new Hook from the given HTTP Request.
@@ -22,6 +24,7 @@ func NewFromRequest(r *http.Request) (*Hook, error) {
 	h := &Hook{
 		Method:  r.Method,
 		Headers: r.Header,
+		Params:  r.URL.Query(),
 	}
 
 	if r.Body != http.NoBody {
@@ -85,6 +88,8 @@ func (h *Hook) toRequest(target string) (*http.Request, error) {
 	}
 
 	r.Header = h.Headers
+
+	r.URL.RawQuery = h.Params.Encode()
 
 	if h.Body != "" {
 		reader := strings.NewReader(h.Body)

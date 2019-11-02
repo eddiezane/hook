@@ -47,7 +47,7 @@ func (r *recorder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// TODO(eddiezane): Handle http error response
 
 	// TODO(eddiezane): Log body? If so need to clone the readcloser
-	log.Printf("method: %s, headers: %v", req.Method, req.Header)
+	log.Printf("method: %s, headers: %v, params: %v", req.Method, req.Header, req.URL.Query())
 
 	h, err := hook.NewFromRequest(req)
 	if err != nil {
