@@ -55,23 +55,17 @@ func reqString(t *testing.T, req *http.Request) string {
 }
 
 func TestRecord(t *testing.T) {
-	f := testfile(t, "hook.yml")
-	defer deletefile(t, f)
-
-	r, err := newRecorder(f.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer r.close()
-
-	srv := httptest.NewServer(r)
-	defer srv.Close()
-
-	req, err := http.NewRequest(http.MethodGet, srv.URL, strings.NewReader(""))
-	if err != nil {
-		t.Fatal(err)
-	}
-	s := `method: GET
+	testcases := []struct {
+		name    string
+		want    string
+		method  string
+		headers http.Header
+		body    string
+		query   string
+	}{
+		{
+			name: "empty body and params",
+			want: `method: GET
 headers:
   Accept-Encoding:
   - gzip
@@ -79,25 +73,81 @@ headers:
   - Go-http-client/1.1
 body: ""
 params: {}
-`
-
-	client := http.DefaultClient
-
-	if _, err := client.Do(req); err != nil {
-		t.Fatal(err)
+`,
+			method: http.MethodGet,
+			body:   "",
+			query:  "",
+		},
+		{
+			name: "body and params with headers",
+			want: `method: POST
+headers:
+  Accept-Encoding:
+  - gzip
+  Captain:
+  - Hook
+  Content-Length:
+  - "5"
+  User-Agent:
+  - Go-http-client/1.1
+body: tacos
+params:
+  key:
+  - value
+  other:
+  - one
+  - two
+`,
+			method:  http.MethodPost,
+			headers: http.Header{"Captain": {"Hook"}},
+			body:    "tacos",
+			query:   "?key=value&other=one&other=two",
+		},
 	}
-	got := readfile(t, f)
-	if d := diff.Diff(s, got); d != "" {
-		t.Error(d)
-	}
 
-	// Make request again to test appends.
-	if _, err := client.Do(req); err != nil {
-		t.Fatal(err)
-	}
-	want := fmt.Sprintf("%s---\n%s", s, s)
-	got = readfile(t, f)
-	if d := diff.Diff(want, got); d != "" {
-		t.Error(d)
+	for _, tc := range testcases {
+		f := testfile(t, "hook.yml")
+
+		r, err := newRecorder(f.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		srv := httptest.NewServer(r)
+
+		req, err := http.NewRequest(tc.method, srv.URL+tc.query, strings.NewReader(tc.body))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for k, v := range tc.headers {
+			for _, h := range v {
+				req.Header.Add(k, h)
+			}
+		}
+
+		client := http.DefaultClient
+
+		if _, err := client.Do(req); err != nil {
+			t.Fatal(err)
+		}
+		got := readfile(t, f)
+		if d := diff.Diff(tc.want, got); d != "" {
+			t.Error(d)
+		}
+
+		// Make request again to test appends.
+		if _, err := client.Do(req); err != nil {
+			t.Fatal(err)
+		}
+		want := fmt.Sprintf("%s---\n%s", tc.want, tc.want)
+		got = readfile(t, f)
+		if d := diff.Diff(want, got); d != "" {
+			t.Error(d)
+		}
+
+		deletefile(t, f)
+		r.close()
+		srv.Close()
 	}
 }
