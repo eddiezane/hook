@@ -120,11 +120,7 @@ params:
 			t.Fatal(err)
 		}
 
-		for k, v := range tc.headers {
-			for _, h := range v {
-				req.Header.Add(k, h)
-			}
-		}
+		req.Header = tc.headers
 
 		client := http.DefaultClient
 
