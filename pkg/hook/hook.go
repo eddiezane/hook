@@ -24,6 +24,7 @@ func NewFromRequest(r *http.Request) (*Hook, error) {
 	h := &Hook{
 		Method:  r.Method,
 		Headers: r.Header,
+		Params:  r.URL.Query(),
 	}
 
 	if r.Body != http.NoBody {
@@ -87,6 +88,7 @@ func (h *Hook) toRequest(target string) (*http.Request, error) {
 	}
 
 	r.Header = h.Headers
+
 	r.URL.RawQuery = h.Params.Encode()
 
 	if h.Body != "" {

@@ -15,8 +15,7 @@ var fireCommand = &cobra.Command{
 	Use:     "fire",
 	Short:   "Fires the selected webhook at a given url",
 	Long:    "Fire executes the selected webhook at the given url",
-	Example: "hook fire http://localhost:3000 webhooks/twilio/sms.yml",
-	// TODO(jarrettkong) iirc the example is "hook fire path/to/hook.yml url"?
+	Example: "hook fire webhooks/twilio/sms.yml http://localhost:3000",
 	RunE:    fire,
 }
 

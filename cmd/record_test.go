@@ -78,6 +78,7 @@ headers:
   User-Agent:
   - Go-http-client/1.1
 body: ""
+params: {}
 `
 
 	client := http.DefaultClient

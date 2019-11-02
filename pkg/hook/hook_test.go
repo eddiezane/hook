@@ -15,7 +15,7 @@ import (
 func TestNewFromRequest(t *testing.T) {
 	body := "test=body"
 	b := strings.NewReader(body)
-	r, err := http.NewRequest(http.MethodPost, "/", b)
+	r, err := http.NewRequest(http.MethodPost, "http://localhost?query=value&other=one&other=two", b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -41,7 +41,15 @@ func TestNewFromRequest(t *testing.T) {
 	}
 
 	if h.Body != body {
-		t.Errorf("expected body to be %s go %s", body, h.Body)
+		t.Errorf("expected body to be %s got %s", body, h.Body)
+	}
+
+	q := url.Values{
+		"query": {"value"},
+		"other": {"one", "two"},
+	}
+	if !reflect.DeepEqual(q, h.Params) {
+		t.Errorf("expected params to be %v got %v", q, h.Params)
 	}
 }
 
@@ -97,7 +105,7 @@ func TestToRequest_empty_params(t *testing.T) {
 		t.Error(err)
 	}
 
-	if reflect.DeepEqual(url.Values{}, r.URL.Query()) {
+	if !reflect.DeepEqual(url.Values{}, r.URL.Query()) {
 		t.Errorf("expected params to be %v got %v", url.Values{}, r.URL.Query())
 	}
 }
