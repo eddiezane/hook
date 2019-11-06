@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/eddiezane/hook/pkg/hook"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -41,22 +42,8 @@ func defaultName(raw string) (string, error) {
 	return strings.TrimSuffix(filepath.Base(u.Path), ".git"), nil
 }
 
-// Get the current configuration.
-// Returns a map so that values can easily be treated as a set.
-func getRemoteConfig() (map[string]*remoteConfig, error) {
-	var cfg []*remoteConfig
-	if err := viper.UnmarshalKey("catalog.remote", &cfg); err != nil {
-		return nil, err
-	}
-	m := make(map[string]*remoteConfig)
-	for _, c := range cfg {
-		m[c.Name] = c
-	}
-	return m, nil
-}
-
-func writeRemoteConfig(m map[string]*remoteConfig) error {
-	cfg := make([]*remoteConfig, 0, len(m))
+func writeRemoteConfig(m hook.RemoteConfigSet) error {
+	cfg := make([]*hook.RemoteConfig, 0, len(m))
 	for _, v := range m {
 		cfg = append(cfg, v)
 	}
@@ -84,12 +71,12 @@ func touchConfig() (string, error) {
 		return "", err
 	}
 
-	dir := filepath.Join(home, ".config", appName)
+	dir := filepath.Join(home, ".config", hook.AppName)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
 	}
 
-	path := filepath.Join(dir, fmt.Sprintf("%s.yaml", appName))
+	path := filepath.Join(dir, fmt.Sprintf("%s.yaml", hook.AppName))
 	f, err := os.OpenFile(path, os.O_CREATE, 0600)
 	if err != nil {
 		return "", err
@@ -106,12 +93,11 @@ func addConfig(url, name, revision string) error {
 		}
 	}
 
-	cfg, err := getRemoteConfig()
+	cfg, err := hook.GetRemoteConfigs()
 	if err != nil {
 		return err
 	}
-
-	cfg[name] = &remoteConfig{
+	cfg[name] = &hook.RemoteConfig{
 		Name:     name,
 		URL:      url,
 		Revision: revision,
@@ -121,8 +107,6 @@ func addConfig(url, name, revision string) error {
 }
 
 func tap(cmd *cobra.Command, args []string) error {
-	initcfg()
-
 	if len(args) < 1 {
 		return errors.New("no arguments given")
 	}

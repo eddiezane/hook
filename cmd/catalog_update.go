@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/eddiezane/hook/pkg/hook"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -69,7 +69,7 @@ func updateRepo(name, dir, revision string) error {
 }
 
 func updateConfig(names ...string) error {
-	rc, err := getRemoteConfig()
+	rc, err := hook.GetRemoteConfigs()
 	if err != nil {
 		return err
 	}
@@ -82,15 +82,15 @@ func updateConfig(names ...string) error {
 	}
 
 	for _, n := range names {
-		cfg, ok := rc[n]
-		if !ok {
-			log.Printf("config %s not found", n)
+		cfg, err := rc.Get(n)
+		if err != nil {
+			log.Print(err)
 			continue
 		}
 
 		log.Printf("updating %s@%s", cfg.Name, cfg.Revision)
-		dir := filepath.Join(viper.GetString("cache"), cfg.Name)
 
+		dir := cfg.Path()
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			if err := cloneRepo(cfg.Name, cfg.URL, dir, cfg.Revision); err != nil {
 				return err
@@ -106,7 +106,5 @@ func updateConfig(names ...string) error {
 }
 
 func update(cmd *cobra.Command, args []string) error {
-	initcfg()
-
 	return updateConfig(args...)
 }
