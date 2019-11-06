@@ -87,12 +87,28 @@ func NewFromPath(path string) ([]*Hook, error) {
 		path = filepath.Join(cfg.Path(), file)
 	}
 
-	f, err := os.Open(path)
+	f, err := openFile(path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 	return New(f)
+}
+
+func openFile(path string) (*os.File, error) {
+	if filepath.Ext(path) != "" {
+		return os.Open(path)
+	}
+
+	var err error
+	for _, ext := range []string{"", ".yaml", ".yml"} {
+		var f *os.File
+		f, err = os.Open(path + ext)
+		if err == nil {
+			return f, nil
+		}
+	}
+	return nil, err
 }
 
 // New creates a new Hook from the given bytestring.
