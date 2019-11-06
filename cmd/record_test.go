@@ -71,8 +71,6 @@ headers:
   - gzip
   User-Agent:
   - Go-http-client/1.1
-body: ""
-params: {}
 `,
 			method: http.MethodGet,
 			body:   "",
@@ -103,47 +101,69 @@ params:
 			body:    "tacos",
 			query:   "?key=value&other=one&other=two",
 		},
+		{
+			name: "json body",
+
+			want: `method: POST
+headers:
+  Accept-Encoding:
+  - application/json
+  Content-Length:
+  - "14"
+  User-Agent:
+  - Go-http-client/1.1
+body: |-
+  {
+    "foo": "bar"
+  }
+`,
+			method:  http.MethodPost,
+			headers: http.Header{"Accept-Encoding": []string{"application/json"}},
+			body:    `{"foo": "bar"}`,
+		},
 	}
 
 	for _, tc := range testcases {
-		f := testfile(t, "hook.yml")
+		t.Run(tc.name, func(t *testing.T) {
+			f := testfile(t, "hook.yml")
 
-		r, err := newRecorder(f.Name())
-		if err != nil {
-			t.Fatal(err)
-		}
+			r, err := newRecorder(f.Name())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		srv := httptest.NewServer(r)
+			srv := httptest.NewServer(r)
 
-		req, err := http.NewRequest(tc.method, srv.URL+tc.query, strings.NewReader(tc.body))
-		if err != nil {
-			t.Fatal(err)
-		}
+			req, err := http.NewRequest(tc.method, srv.URL+tc.query, strings.NewReader(tc.body))
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		req.Header = tc.headers
+			req.Header = tc.headers
 
-		client := http.DefaultClient
+			client := http.DefaultClient
 
-		if _, err := client.Do(req); err != nil {
-			t.Fatal(err)
-		}
-		got := readfile(t, f)
-		if d := diff.Diff(tc.want, got); d != "" {
-			t.Error(d)
-		}
+			if _, err := client.Do(req); err != nil {
+				t.Fatal(err)
+			}
+			got := readfile(t, f)
+			if d := diff.Diff(tc.want, got); d != "" {
+				t.Error(d)
+			}
 
-		// Make request again to test appends.
-		if _, err := client.Do(req); err != nil {
-			t.Fatal(err)
-		}
-		want := fmt.Sprintf("%s---\n%s", tc.want, tc.want)
-		got = readfile(t, f)
-		if d := diff.Diff(want, got); d != "" {
-			t.Error(d)
-		}
+			// Make request again to test appends.
+			if _, err := client.Do(req); err != nil {
+				t.Fatal(err)
+			}
+			want := fmt.Sprintf("%s---\n%s", tc.want, tc.want)
+			got = readfile(t, f)
+			if d := diff.Diff(want, got); d != "" {
+				t.Error(d)
+			}
 
-		deletefile(t, f)
-		r.close()
-		srv.Close()
+			deletefile(t, f)
+			r.close()
+			srv.Close()
+		})
 	}
 }

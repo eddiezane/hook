@@ -56,7 +56,9 @@ func (r *recorder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	s, err := h.Dump()
 	if err != nil {
-		log.Fatal(err)
+		log.Println("error dumping hook:", err, h)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	// TODO(eddiezane): Would this ever happen?
 	if len(s) != 0 {
@@ -67,11 +69,15 @@ func (r *recorder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if fi, err := r.f.Stat(); err == nil && fi.Size() > 0 {
 			// If file has data in it already, append doc separator.
 			if _, err := fw.Write([]byte("---\n")); err != nil {
-				log.Fatal(err)
+				log.Println("error writing doc separator:", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 		}
 		if _, err := fw.Write(s); err != nil {
-			log.Fatal(err)
+			log.Println("error writing file:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 		fw.Flush()
 	}

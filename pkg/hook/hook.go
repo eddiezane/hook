@@ -1,8 +1,11 @@
 package hook
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,9 +17,29 @@ import (
 // Hook represents a single hook configuration.
 type Hook struct {
 	Method  string      `yaml:"method"`
+	Headers http.Header `yaml:"headers,omitempty"`
+	Body    string      `yaml:"body,omitempty"`
+	Params  url.Values  `yaml:"params,omitempty"`
+}
+
+type jsonMarshal struct {
+	Method  string      `yaml:"method"`
 	Headers http.Header `yaml:"headers"`
-	Body    string      `yaml:"body"`
-	Params  url.Values  `yaml:"params"`
+	Body    jsonBody    `yaml:"body,omitempty"`
+	Params  url.Values  `yaml:"params,omitempty"`
+}
+
+// Implement a custom marshaller to pretty print payload body. This also gets
+// around line length restrictions of the yaml package in most cases.
+type jsonBody string
+
+func (s jsonBody) MarshalYAML() (interface{}, error) {
+	buf := new(bytes.Buffer)
+	if err := json.Indent(buf, []byte(string(s)), "", "  "); err != nil {
+		log.Println("error indenting payload:", err, s)
+		return nil, err
+	}
+	return buf.String(), nil
 }
 
 // NewFromRequest creates a new Hook from the given HTTP Request.
@@ -68,7 +91,17 @@ func New(r io.Reader) ([]*Hook, error) {
 
 // Dump TODO(eddiezane): Is this the right method?
 func (h *Hook) Dump() ([]byte, error) {
-	return yaml.Marshal(h)
+	switch h.Headers.Get("Accept-Encoding") {
+	case "application/json":
+		return yaml.Marshal(&jsonMarshal{
+			Method:  h.Method,
+			Headers: h.Headers,
+			Body:    jsonBody(h.Body),
+			Params:  h.Params,
+		})
+	default:
+		return yaml.Marshal(h)
+	}
 }
 
 // Fire sends an HTTP request to the given target.
