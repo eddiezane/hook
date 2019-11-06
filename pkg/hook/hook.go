@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -62,6 +63,15 @@ func NewFromRequest(r *http.Request) (*Hook, error) {
 
 // NewFromPath creates a new Hook from the given path.
 func NewFromPath(path string) ([]*Hook, error) {
+	catalog, file := ParsePath(path)
+	if catalog != "" {
+		cfg, err := GetRemoteConfig(catalog)
+		if err != nil {
+			return nil, err
+		}
+		path = filepath.Join(cfg.Path(), file)
+	}
+
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err

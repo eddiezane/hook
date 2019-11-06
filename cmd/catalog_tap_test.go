@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/eddiezane/hook/pkg/hook"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -71,7 +72,7 @@ func testdirInit(t *testing.T) string {
 	os.Setenv("HOME", d)
 
 	viper.Reset()
-	initcfg()
+	hook.Initcfg()
 
 	return d
 }
@@ -87,10 +88,10 @@ func TestAddConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := &config{
+	want := &hook.Config{
 		Cache: cachedir(t),
-		Catalog: &catalogConfig{
-			Remote: []*remoteConfig{
+		Catalog: &hook.CatalogConfig{
+			Remote: []*hook.RemoteConfig{
 				{
 					Name: "foo",
 					URL:  "https://example.com/foo",
@@ -105,11 +106,11 @@ func TestAddConfig(t *testing.T) {
 	}
 
 	s := readpath(t, filepath.Join(d, ".config", "hook", "hook.yaml"))
-	got := new(config)
+	got := new(hook.Config)
 	if err := yaml.Unmarshal([]byte(s), got); err != nil {
 		t.Fatal(err)
 	}
-	got.Catalog.sort()
+	got.Catalog.Sort()
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Error(diff)
 	}
