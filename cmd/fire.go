@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/eddiezane/hook/pkg/hook"
 	"github.com/spf13/cobra"
@@ -34,7 +35,8 @@ func fire(cmd *cobra.Command, args []string) error {
 	for _, h := range hooks {
 		res, err := h.Fire(target)
 		if err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "error: %v", err)
+			continue
 		}
 		fmt.Println(res)
 	}
