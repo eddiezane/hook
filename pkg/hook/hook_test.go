@@ -234,3 +234,28 @@ func TestFire(t *testing.T) {
 		})
 	}
 }
+
+func TestNewFromPath(t *testing.T) {
+	want := []*Hook{{
+		Method: http.MethodPost,
+		Headers: http.Header{
+			"foo":  []string{"bar", "baz"},
+			"herp": []string{"derp"},
+		},
+		Body: "test=body",
+	}}
+
+	for _, file := range []string{"a", "b", "c"} {
+		t.Run(file, func(t *testing.T) {
+			path := filepath.Join("testdata", file)
+			t.Log(path)
+			got, err := NewFromPath(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Error(err)
+			}
+		})
+	}
+}
