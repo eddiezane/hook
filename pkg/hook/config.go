@@ -15,6 +15,14 @@ const (
 	AppName = "hook"
 )
 
+var (
+	// DefaultCatalog is the default catalog installed automatically for users.
+	DefaultCatalog = &RemoteConfig{
+		Name: "@",
+		URL:  "https://github.com/eddiezane/hook-catalog",
+	}
+)
+
 // Initcfg intializes the config environment. This is not done as a part of
 // the standard Go init function so that we can override environment specific
 // variables (such as $HOME) in tests.
@@ -35,6 +43,8 @@ func Initcfg() {
 		cache = os.TempDir()
 	}
 	viper.SetDefault("cache", filepath.Join(cache, AppName))
+
+	viper.SetDefault("catalog.remote", DefaultCatalog)
 
 	viper.SetConfigName(AppName)
 
@@ -66,18 +76,6 @@ func (c CatalogConfig) Sort() {
 	})
 }
 
-// RemoteConfig describes a single catalog remote.
-type RemoteConfig struct {
-	Name     string
-	URL      string
-	Revision string `yaml:"omitempty"`
-}
-
-// Path returns the cache path where the remote cache exists.
-func (c RemoteConfig) Path() string {
-	return filepath.Join(viper.GetString("cache"), c.Name)
-}
-
 // RemoteConfigSet maps remote config names to the complete remote config.
 type RemoteConfigSet map[string]*RemoteConfig
 
@@ -104,13 +102,13 @@ func (r RemoteConfigSet) Get(name string) (*RemoteConfig, error) {
 	return cfg, nil
 }
 
-// GetRemoteConfig resolves a catalog name into the underlyinng remote config.
+// GetRemoteConfig resolves a catalog name into the underlying remote config.
 // If the catalog doesn't exist, an error is returned.
 func GetRemoteConfig(catalog string) (*RemoteConfig, error) {
 	cfg, err := GetRemoteConfigs()
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(cfg)
+	fmt.Println(cfg.Get(catalog))
 	return cfg.Get(catalog)
 }
