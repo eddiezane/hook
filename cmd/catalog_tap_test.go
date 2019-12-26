@@ -92,6 +92,7 @@ func TestAddConfig(t *testing.T) {
 		Cache: cachedir(t),
 		Catalog: &hook.CatalogConfig{
 			Remote: []*hook.RemoteConfig{
+				hook.DefaultCatalog,
 				{
 					Name: "foo",
 					URL:  "https://example.com/foo",

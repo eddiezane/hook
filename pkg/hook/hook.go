@@ -9,8 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -78,37 +76,25 @@ func NewFromRequest(r *http.Request, opts ...Option) (*Hook, error) {
 
 // NewFromPath creates a new Hook from the given path.
 func NewFromPath(path string) ([]*Hook, error) {
-	catalog, file := ParsePath(path)
+	// Default to LocalCatalog.
+	var cfg Catalog = LocalCatalog{}
+
+	catalog, path := ParsePath(path)
 	if catalog != "" {
-		cfg, err := GetRemoteConfig(catalog)
+		// Remote catalog.
+		var err error
+		cfg, err = GetRemoteConfig(catalog)
 		if err != nil {
 			return nil, err
 		}
-		path = filepath.Join(cfg.Path(), file)
 	}
 
-	f, err := openFile(path)
+	f, err := cfg.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 	return New(f)
-}
-
-func openFile(path string) (*os.File, error) {
-	if filepath.Ext(path) != "" {
-		return os.Open(path)
-	}
-
-	var err error
-	for _, ext := range []string{"", ".yaml", ".yml"} {
-		var f *os.File
-		f, err = os.Open(path + ext)
-		if err == nil {
-			return f, nil
-		}
-	}
-	return nil, err
 }
 
 // New creates a new Hook from the given bytestring.
