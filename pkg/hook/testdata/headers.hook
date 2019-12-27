@@ -1,0 +1,18 @@
+method: POST
+headers:
+  Accept-Encoding:
+  - gzip
+  Foo:
+  - bar
+  - baz
+  Herp:
+  - derp
+  User-Agent:
+  - Go-http-client/1.1
+body: test=body
+params:
+  foo:
+  - bar
+  - bar
+  taco:
+  - cat

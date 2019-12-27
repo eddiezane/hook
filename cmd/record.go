@@ -13,29 +13,36 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var port string
+var (
+	// Flags
+	port   string
+	base64 []string
 
-var recordCommand = &cobra.Command{
-	Use:     "record",
-	Short:   "Listens for an incoming webook and saves it",
-	Long:    "records starts up a local HTTP server and saves a request made against it into a YAML serialization at the provided path",
-	Example: "hook record --port 9000 path/to/webhook.yml",
-	RunE:    record,
-}
+	recordCommand = &cobra.Command{
+		Use:     "record",
+		Short:   "Listens for an incoming webook and saves it",
+		Long:    "records starts up a local HTTP server and saves a request made against it into a YAML serialization at the provided path",
+		Example: "hook record --port 9000 path/to/webhook.yml",
+		RunE:    record,
+	}
+)
 
 type recorder struct {
 	mu sync.Mutex
 	f  *os.File
+
+	opts []hook.Option
 }
 
-func newRecorder(path string) (*recorder, error) {
+func newRecorder(path string, opts ...hook.Option) (*recorder, error) {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
 
 	return &recorder{
-		f: f,
+		f:    f,
+		opts: opts,
 	}, nil
 }
 
@@ -49,7 +56,7 @@ func (r *recorder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// TODO(eddiezane): Log body? If so need to clone the readcloser
 	log.Printf("method: %s, headers: %v, params: %v", req.Method, req.Header, req.URL.Query())
 
-	h, err := hook.NewFromRequest(req)
+	h, err := hook.NewFromRequest(req, r.opts...)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,7 +97,13 @@ func record(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("incorrect number of arguments provided. expected %d", 1)
 	}
 
-	r, err := newRecorder(args[0])
+	var opts []hook.Option
+	b64t := &hook.Base64Transformer{}
+	for _, f := range base64 {
+		opts = append(opts, hook.DecodeOption(b64t, f))
+	}
+
+	r, err := newRecorder(args[0], opts...)
 	if err != nil {
 		return err
 	}
@@ -102,5 +115,6 @@ func record(cmd *cobra.Command, args []string) error {
 
 func init() {
 	recordCommand.Flags().StringVar(&port, "port", "8080", "Port to listen on")
+	recordCommand.Flags().StringArrayVar(&base64, "base64", nil, "comma separated list of fields to base64 decode")
 	rootCmd.AddCommand(recordCommand)
 }

@@ -1,0 +1,8 @@
+method: POST
+headers:
+  Accept-Encoding:
+  - application/json
+body: '{"foo": "bar"}'
+transform:
+  base64:
+    - foo

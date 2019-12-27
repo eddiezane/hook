@@ -3,6 +3,7 @@ package hook
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -21,13 +22,16 @@ type Hook struct {
 	Headers http.Header `yaml:"headers,omitempty"`
 	Body    string      `yaml:"body,omitempty"`
 	Params  url.Values  `yaml:"params,omitempty"`
+
+	Transform map[TransformStrategy][]string `yaml:",omitempty"`
 }
 
 type jsonMarshal struct {
-	Method  string      `yaml:"method"`
-	Headers http.Header `yaml:"headers"`
-	Body    jsonBody    `yaml:"body,omitempty"`
-	Params  url.Values  `yaml:"params,omitempty"`
+	Method    string                         `yaml:"method"`
+	Headers   http.Header                    `yaml:"headers,omitempty"`
+	Body      jsonBody                       `yaml:"body,omitempty"`
+	Params    url.Values                     `yaml:"params,omitempty"`
+	Transform map[TransformStrategy][]string `yaml:"transform,omitempty"`
 }
 
 // Implement a custom marshaller to pretty print payload body. This also gets
@@ -43,8 +47,13 @@ func (s jsonBody) MarshalYAML() (interface{}, error) {
 	return buf.String(), nil
 }
 
+// Option allows for optional modifications to be made onto the new hook.
+type Option interface {
+	Apply(h *Hook) error
+}
+
 // NewFromRequest creates a new Hook from the given HTTP Request.
-func NewFromRequest(r *http.Request) (*Hook, error) {
+func NewFromRequest(r *http.Request, opts ...Option) (*Hook, error) {
 	h := &Hook{
 		Method:  r.Method,
 		Headers: r.Header,
@@ -57,6 +66,12 @@ func NewFromRequest(r *http.Request) (*Hook, error) {
 			return nil, err
 		}
 		h.Body = string(b)
+	}
+
+	for _, o := range opts {
+		if err := o.Apply(h); err != nil {
+			return nil, err
+		}
 	}
 	return h, nil
 }
@@ -104,10 +119,11 @@ func (h *Hook) Dump() ([]byte, error) {
 	switch h.Headers.Get("Accept-Encoding") {
 	case "application/json":
 		return yaml.Marshal(&jsonMarshal{
-			Method:  h.Method,
-			Headers: h.Headers,
-			Body:    jsonBody(h.Body),
-			Params:  h.Params,
+			Method:    h.Method,
+			Headers:   h.Headers,
+			Body:      jsonBody(h.Body),
+			Params:    h.Params,
+			Transform: h.Transform,
 		})
 	default:
 		return yaml.Marshal(h)
@@ -125,6 +141,20 @@ func (h *Hook) Fire(target string) (*http.Response, error) {
 
 // toRequest converts the hook into a HTTP request.
 func (h *Hook) toRequest(target string) (*http.Request, error) {
+	for t, paths := range h.Transform {
+		fn, ok := Transformers[t]
+		if !ok {
+			return nil, fmt.Errorf("unknown transformer %v", t)
+		}
+		for _, path := range paths {
+			var err error
+			h.Body, err = fn.Encode(h.Body, path)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	r, err := http.NewRequest(h.Method, target, nil)
 	if err != nil {
 		return nil, err
