@@ -62,6 +62,7 @@ func TestRecord(t *testing.T) {
 		headers http.Header
 		body    string
 		query   string
+		opts    []hook.Option
 	}{
 		{
 			name: "empty body and params",
@@ -103,7 +104,6 @@ params:
 		},
 		{
 			name: "json body",
-
 			want: `method: POST
 headers:
   Accept-Encoding:
@@ -121,18 +121,44 @@ body: |-
 			headers: http.Header{"Accept-Encoding": []string{"application/json"}},
 			body:    `{"foo": "bar"}`,
 		},
+		{
+			name: "base64 decode",
+			want: `method: POST
+headers:
+  Accept-Encoding:
+  - application/json
+  Content-Length:
+  - "15"
+  User-Agent:
+  - Go-http-client/1.1
+body: |-
+  {
+    "foo": "bar"
+  }
+transform:
+  base64:
+  - foo
+`,
+			method:  http.MethodPost,
+			headers: http.Header{"Accept-Encoding": []string{"application/json"}},
+			body:    `{"foo": "YmFy"}`,
+			opts:    []hook.Option{hook.DecodeOption(hook.Base64Transformer{}, "foo")},
+		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			f := testfile(t, "hook.yml")
+			defer deletefile(t, f)
 
-			r, err := newRecorder(f.Name())
+			r, err := newRecorder(f.Name(), tc.opts...)
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer r.close()
 
 			srv := httptest.NewServer(r)
+			defer srv.Close()
 
 			req, err := http.NewRequest(tc.method, srv.URL+tc.query, strings.NewReader(tc.body))
 			if err != nil {
@@ -160,10 +186,6 @@ body: |-
 			if d := diff.Diff(want, got); d != "" {
 				t.Error(d)
 			}
-
-			deletefile(t, f)
-			r.close()
-			srv.Close()
 		})
 	}
 }

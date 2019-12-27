@@ -1,0 +1,13 @@
+POST /?foo=bar&foo=bar&taco=cat HTTP/1.1
+Host: example.com
+User-Agent: Go-http-client/1.1
+Transfer-Encoding: chunked
+Accept-Encoding: gzip
+Foo: bar
+Foo: baz
+Herp: derp
+
+9
+test=body
+0
+
