@@ -6,31 +6,49 @@ Have you ever needed to build an app that consumes a new [pull request webhook e
 
 That's the friction Hook aims to solve.
 
-## Implmentation
+## Implementation
 
 Webhooks are serialized to and from a basic YAML syntax with the intention of being human creatable and editable.
 
-# Installation 
+# Installation
 
-Until there are binaries built you can install Hook into your `$GOPATH/bin`
-
-```
+```bash
 go get -u github.com/eddiezane/hook
 ```
 
 # Usage
 
-Still a work in progress but a general idea of firing a webhook is:
+## Fire
+
+Hooks can be fired locally by specifying the path:
 
 ```bash
 hook fire webhooks/twilio/sms http://localhost:8080
 ```
+
+File suffixes are fuzzy matched - specifying a hook file `foo` will match `foo`, `foo.yaml`, or `foo.yml`
+
+### Catalogs
+
+`hook` can be configured to read from remote Git repositories for hook data.
+
+By default, hook comes installed with a default catalog of contributed hooks stored at https://github.com/eddiezane/hook-catalog.
+
+```bash
+hook fire @github/push http://localhost:8080
+```
+
+Additional catalogs can be configured via the `hook catalog` subcommand.
+
+## Record
 
 Hook also has an HTTP server for recording new webhooks:
 
 ```bash
 hook record --port 8080 path/to/new/webhook.yml
 ```
+
+Multiple hooks received by the server will be stored in the same file as a multidoc yaml (separated by `---`).
 
 # Roadmap
 
@@ -42,13 +60,13 @@ hook record --port 8080 path/to/new/webhook.yml
   - [ ] Don't use default http client
   - [ ] Server error handling
   - [ ] Server shutdown logic
-  - [ ] Better error handling in current commands
-  - [ ] Implement proper flags
+  - [x] Better error handling in current commands
+  - [x] Implement proper flags
   - [ ] Add view command to view a webhook in it's YAML format
-- [ ] Catalog logic
-  - [ ] Define spec for a catalog
-  - [ ] Download and lookup (tap) a new catalog
-  - [ ] Create default catalog as it's own GitHub repo
+- [x] Catalog logic
+  - [x] Define spec for a catalog
+  - [x] Download and lookup (tap) a new catalog
+  - [x] Create default catalog as it's own GitHub repo
   - [ ] Add automatic workflows to update webhooks.
 - [ ] Template logic for webhooks (sub in vars)
 - [ ] Web UI
