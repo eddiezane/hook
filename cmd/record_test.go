@@ -107,9 +107,11 @@ params:
 			want: `method: POST
 headers:
   Accept-Encoding:
-  - application/json
+  - gzip
   Content-Length:
   - "14"
+  Content-Type:
+  - application/json
   User-Agent:
   - Go-http-client/1.1
 body: |-
@@ -118,17 +120,19 @@ body: |-
   }
 `,
 			method:  http.MethodPost,
-			headers: http.Header{"Accept-Encoding": []string{"application/json"}},
+			headers: http.Header{"Content-Type": []string{"application/json"}},
 			body:    `{"foo": "bar"}`,
 		},
 		{
-			name: "base64 decode",
+			name: "base64 decode field",
 			want: `method: POST
 headers:
   Accept-Encoding:
-  - application/json
+  - gzip
   Content-Length:
   - "15"
+  Content-Type:
+  - application/json
   User-Agent:
   - Go-http-client/1.1
 body: |-
@@ -140,8 +144,35 @@ transform:
   - foo
 `,
 			method:  http.MethodPost,
-			headers: http.Header{"Accept-Encoding": []string{"application/json"}},
+			headers: http.Header{"Content-Type": []string{"application/json"}},
 			body:    `{"foo": "YmFy"}`,
+			opts:    []hook.Option{hook.DecodeOption(hook.Base64Transformer{}, "foo")},
+		},
+		{
+			name: "base64 decode struct",
+			want: `method: POST
+headers:
+  Accept-Encoding:
+  - gzip
+  Content-Length:
+  - "31"
+  Content-Type:
+  - application/json
+  User-Agent:
+  - Go-http-client/1.1
+body: |-
+  {
+    "foo": {
+      "bar": "baz"
+    }
+  }
+transform:
+  base64:
+  - foo
+`,
+			method:  http.MethodPost,
+			headers: http.Header{"Content-Type": []string{"application/json"}},
+			body:    `{"foo": "eyJiYXIiOiAiYmF6In0="}`,
 			opts:    []hook.Option{hook.DecodeOption(hook.Base64Transformer{}, "foo")},
 		},
 	}
