@@ -2,6 +2,7 @@ package hook
 
 import (
 	"encoding/base64"
+	"encoding/json"
 
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -46,13 +47,18 @@ func (Base64Transformer) Encode(json string, path string) (string, error) {
 }
 
 // Decode takes the given payload + path and base64 decodes the value.
-func (Base64Transformer) Decode(json string, path string) (string, error) {
-	in := gjson.Get(json, path).String()
+func (Base64Transformer) Decode(raw string, path string) (string, error) {
+	in := gjson.Get(raw, path).String()
 	out, err := base64.StdEncoding.DecodeString(in)
 	if err != nil {
 		return "", err
 	}
-	return sjson.Set(json, path, out)
+
+	var js map[string]interface{}
+	if json.Unmarshal(out, &js) == nil {
+		return sjson.SetRaw(raw, path, string(out))
+	}
+	return sjson.Set(raw, path, out)
 }
 
 type decodeOption struct {

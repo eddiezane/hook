@@ -118,7 +118,7 @@ func New(r io.Reader) ([]*Hook, error) {
 
 // Dump TODO(eddiezane): Is this the right method?
 func (h *Hook) Dump() ([]byte, error) {
-	switch h.Headers.Get("Accept-Encoding") {
+	switch h.Headers.Get("Content-Type") {
 	case "application/json":
 		return yaml.Marshal(&jsonMarshal{
 			Method:    h.Method,
