@@ -2,7 +2,6 @@ package hook
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -45,7 +44,6 @@ func (rc RemoteConfig) Path() string {
 
 func (rc *RemoteConfig) isCached() bool {
 	_, err := os.Stat(rc.Path())
-	fmt.Println(err, os.IsNotExist(err))
 	return !os.IsNotExist(err)
 }
 

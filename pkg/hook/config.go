@@ -109,6 +109,5 @@ func GetRemoteConfig(catalog string) (*RemoteConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(cfg.Get(catalog))
 	return cfg.Get(catalog)
 }
