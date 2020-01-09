@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/eddiezane/hook/pkg/hook"
@@ -38,7 +40,11 @@ func fire(cmd *cobra.Command, args []string) error {
 			fmt.Fprintf(os.Stderr, "error: %v", err)
 			continue
 		}
-		fmt.Println(res)
+		tee := io.TeeReader(res.Body, os.Stdout)
+		if _, err := ioutil.ReadAll(tee); err != nil {
+			return err
+		}
+		defer res.Body.Close()
 	}
 	return nil
 }
