@@ -7,7 +7,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2
-	github.com/tidwall/gjson v1.3.5
+	github.com/tidwall/gjson v1.9.3
 	github.com/tidwall/sjson v1.0.4
 	gopkg.in/yaml.v2 v2.2.2
 )
